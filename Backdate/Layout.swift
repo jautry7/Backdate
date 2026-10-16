@@ -19,8 +19,7 @@ enum Layout {
         static let boxBottomMarginLast: CGFloat = 20
 
         enum File {
-            static let placeholderHeight: CGFloat = 65
-            static let placeholderCornerRadius: CGFloat = 8
+            static let dropAreaHeight: CGFloat = 65
         }
 
     }

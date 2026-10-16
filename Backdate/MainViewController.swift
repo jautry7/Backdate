@@ -8,8 +8,20 @@ final class MainViewController: NSViewController {
         let rootView = NSView()
         view = rootView
 
-        let filePlaceholder = makeFilePlaceholder()
-        let fileSection = makeSection(title: "File", content: filePlaceholder)
+        let filePrompt = NSTextField(labelWithString: "Drop your file here")
+        filePrompt.font = NSFont.preferredFont(forTextStyle: .title3)
+        filePrompt.textColor = .secondaryLabelColor
+        filePrompt.alphaValue = 0.7
+        filePrompt.alignment = .center
+        filePrompt.translatesAutoresizingMaskIntoConstraints = false
+        let fileArea = NSView()
+        fileArea.translatesAutoresizingMaskIntoConstraints = false
+        fileArea.addSubview(filePrompt)
+        NSLayoutConstraint.activate([
+            filePrompt.centerXAnchor.constraint(equalTo: fileArea.centerXAnchor),
+            filePrompt.centerYAnchor.constraint(equalTo: fileArea.centerYAnchor),
+        ])
+        let fileSection = makeSection(title: "File", content: fileArea)
 
         let dateDescription = NSTextField(labelWithString: "Format MM/DD/YYYY:")
         dateDescription.translatesAutoresizingMaskIntoConstraints = false
@@ -70,7 +82,7 @@ final class MainViewController: NSViewController {
             fileSection.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.topPadding),
             fileSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
             fileSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
-            filePlaceholder.heightAnchor.constraint(equalToConstant: Layout.Content.File.placeholderHeight),
+            fileArea.heightAnchor.constraint(equalToConstant: Layout.Content.File.dropAreaHeight),
 
             dateSection.topAnchor.constraint(
                 equalTo: fileSection.bottomAnchor,
@@ -126,17 +138,6 @@ final class MainViewController: NSViewController {
             content.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
         ])
 
-        return box
-    }
-
-    private func makeFilePlaceholder() -> NSBox {
-        let box = NSBox()
-        box.boxType = .custom
-        box.titlePosition = .noTitle
-        box.borderWidth = 0
-        box.fillColor = NSColor.labelColor.withAlphaComponent(0.04)
-        box.cornerRadius = Layout.Content.File.placeholderCornerRadius
-        box.translatesAutoresizingMaskIntoConstraints = false
         return box
     }
 

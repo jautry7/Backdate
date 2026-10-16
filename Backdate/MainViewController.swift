@@ -11,14 +11,15 @@ final class MainViewController: NSViewController {
         let filePlaceholder = makeFilePlaceholder()
         let fileSection = makeSection(title: "File", content: filePlaceholder)
 
+        let dateDescription = NSTextField(labelWithString: "Format MM/DD/YYYY:")
+        dateDescription.translatesAutoresizingMaskIntoConstraints = false
         let datePicker = InsetDatePickerView()
         let dateSpacer = NSView()
         dateSpacer.translatesAutoresizingMaskIntoConstraints = false
-        let dateRow = NSStackView(views: [datePicker, dateSpacer])
+        let dateRow = NSStackView(views: [dateDescription, datePicker, dateSpacer])
         dateRow.orientation = .horizontal
         dateRow.alignment = .centerY
         dateRow.distribution = .fill
-        dateRow.spacing = 0
         dateRow.translatesAutoresizingMaskIntoConstraints = false
         let dateSection = makeSection(title: "New date", content: dateRow)
 
@@ -107,7 +108,8 @@ final class MainViewController: NSViewController {
     private func makeSection(title: String, content: NSView) -> NSBox {
         let box = SectionBox()
         box.title = title
-        box.titleFont = .preferredFont(forTextStyle: .callout)
+        let titleFont = NSFont.preferredFont(forTextStyle: .callout)
+        box.titleFont = .systemFont(ofSize: titleFont.pointSize, weight: .semibold)
         (box.titleCell as? NSTextFieldCell)?.textColor = .secondaryLabelColor
         box.contentViewMargins = NSSize(
             width: Layout.Section.ContentPadding.horizontal,

@@ -6,7 +6,7 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate {
     convenience init() {
         let contentViewController = MainViewController()
         let window = NSWindow(
-            contentRect: NSRect(origin: .zero, size: Layout.Window.contentSize),
+            contentRect: NSRect(x: 0, y: 0, width: Layout.Window.contentWidth, height: 1),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -15,6 +15,8 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate {
         self.init(window: window)
         window.contentViewController = contentViewController
         configure(window)
+        sizeWindowToContent(window)
+        window.center()
     }
 
     private func configure(_ window: NSWindow) {
@@ -30,14 +32,18 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate {
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
         toolbar.allowsUserCustomization = false
-        toolbar.centeredItemIdentifiers = [Self.titleItemIdentifier]
+        toolbar.centeredItemIdentifier = Self.titleItemIdentifier
         window.toolbar = toolbar
 
         window.standardWindowButton(.zoomButton)?.isEnabled = false
-        var frame = window.frame
-        frame.size = Layout.Window.frameSize
-        window.setFrame(frame, display: false)
-        window.center()
+    }
+
+    private func sizeWindowToContent(_ window: NSWindow) {
+        guard let contentView = window.contentView else { return }
+        contentView.layoutSubtreeIfNeeded()
+        window.setContentSize(
+            NSSize(width: Layout.Window.contentWidth, height: contentView.fittingSize.height)
+        )
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -56,7 +62,7 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate {
         guard itemIdentifier == Self.titleItemIdentifier else { return nil }
 
         let title = NSTextField(labelWithString: "Backdate")
-        title.font = .systemFont(ofSize: Layout.Window.titlePointSize, weight: .bold)
+        title.font = .preferredFont(forTextStyle: .headline)
         title.textColor = .labelColor
         title.alignment = .center
         title.setContentHuggingPriority(.required, for: .horizontal)

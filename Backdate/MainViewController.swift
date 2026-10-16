@@ -8,13 +8,20 @@ final class MainViewController: NSViewController {
         let rootView = NSView()
         view = rootView
 
-        let fileTitle = makeSectionTitle("File")
         let filePlaceholder = makeFilePlaceholder()
+        let fileSection = makeSection(title: "File", content: filePlaceholder)
 
-        let dateTitle = makeSectionTitle("New date")
         let datePicker = InsetDatePickerView()
+        let dateSpacer = NSView()
+        dateSpacer.translatesAutoresizingMaskIntoConstraints = false
+        let dateRow = NSStackView(views: [datePicker, dateSpacer])
+        dateRow.orientation = .horizontal
+        dateRow.alignment = .centerY
+        dateRow.distribution = .fill
+        dateRow.spacing = 0
+        dateRow.translatesAutoresizingMaskIntoConstraints = false
+        let dateSection = makeSection(title: "New date", content: dateRow)
 
-        let changeTitle = makeSectionTitle("Change")
         let createdAndModifiedButton = makeRadioButton(
             title: "Created & modified date",
             action: #selector(changeSelectionChanged(_:))
@@ -26,8 +33,8 @@ final class MainViewController: NSViewController {
         changeButtons = [createdAndModifiedButton, modifiedOnlyButton]
         createdAndModifiedButton.state = .on
         let changeGroup = makeRadioGroup(changeButtons)
+        let changeSection = makeSection(title: "Change", content: changeGroup)
 
-        let affectTitle = makeSectionTitle("Affect")
         let justThisItemButton = makeRadioButton(
             title: "Just this item",
             action: #selector(affectSelectionChanged(_:))
@@ -43,88 +50,55 @@ final class MainViewController: NSViewController {
         affectButtons = [justThisItemButton, nextLevelButton, everyNestedItemButton]
         justThisItemButton.state = .on
         let affectGroup = makeRadioGroup(affectButtons)
+        let affectSection = makeSection(title: "Affect", content: affectGroup)
 
         let separator = NSBox()
         separator.boxType = .separator
         separator.translatesAutoresizingMaskIntoConstraints = false
 
         let updateButton = NSButton(title: "Update", target: nil, action: nil)
-        updateButton.bezelStyle = .rounded
-        updateButton.controlSize = .large
+        updateButton.controlSize = .regular
         updateButton.keyEquivalent = "\r"
         updateButton.translatesAutoresizingMaskIntoConstraints = false
 
         [
-            fileTitle,
-            filePlaceholder,
-            dateTitle,
-            datePicker,
-            changeTitle,
-            changeGroup,
-            affectTitle,
-            affectGroup,
+            fileSection,
+            dateSection,
+            changeSection,
+            affectSection,
             separator,
             updateButton,
         ].forEach(rootView.addSubview)
 
         NSLayoutConstraint.activate([
-            fileTitle.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.topPadding),
-            fileTitle.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
-
-            filePlaceholder.topAnchor.constraint(
-                equalTo: fileTitle.bottomAnchor,
-                constant: Layout.Content.File.titleToPlaceholderSpacing
-            ),
-            filePlaceholder.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
-            filePlaceholder.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
+            fileSection.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.topPadding),
+            fileSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
+            fileSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
             filePlaceholder.heightAnchor.constraint(equalToConstant: Layout.Content.File.placeholderHeight),
 
-            dateTitle.topAnchor.constraint(
-                equalTo: filePlaceholder.bottomAnchor,
+            dateSection.topAnchor.constraint(
+                equalTo: fileSection.bottomAnchor,
                 constant: Layout.Content.File.placeholderToDateTitleSpacing
             ),
-            dateTitle.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
+            dateSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
+            dateSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
 
-            datePicker.topAnchor.constraint(
-                equalTo: dateTitle.bottomAnchor,
-                constant: Layout.Content.Date.titleToPickerSpacing
-            ),
-            datePicker.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.Date.pickerLeading),
-
-            changeTitle.topAnchor.constraint(
-                equalTo: datePicker.bottomAnchor,
+            changeSection.topAnchor.constraint(
+                equalTo: dateSection.bottomAnchor,
                 constant: Layout.Content.Date.pickerToChangeTitleSpacing
             ),
-            changeTitle.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
+            changeSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
+            changeSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
 
-            changeGroup.topAnchor.constraint(
-                equalTo: changeTitle.bottomAnchor,
-                constant: Layout.Content.Change.titleToOptionsSpacing
-            ),
-            changeGroup.leadingAnchor.constraint(
-                equalTo: changeTitle.leadingAnchor,
-                constant: Layout.RadioGroup.leadingIndent
-            ),
-            changeGroup.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
-
-            affectTitle.topAnchor.constraint(
-                equalTo: changeGroup.bottomAnchor,
+            affectSection.topAnchor.constraint(
+                equalTo: changeSection.bottomAnchor,
                 constant: Layout.Content.Change.optionsToAffectTitleSpacing
             ),
-            affectTitle.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
-
-            affectGroup.topAnchor.constraint(
-                equalTo: affectTitle.bottomAnchor,
-                constant: Layout.Content.Affect.titleToOptionsSpacing
-            ),
-            affectGroup.leadingAnchor.constraint(
-                equalTo: affectTitle.leadingAnchor,
-                constant: Layout.RadioGroup.leadingIndent
-            ),
-            affectGroup.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
+            affectSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
+            affectSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
 
             separator.topAnchor.constraint(
-                equalTo: affectGroup.bottomAnchor,
+                equalTo: affectSection.bottomAnchor,
                 constant: Layout.Content.Affect.optionsToSeparatorSpacing
             ),
             separator.leadingAnchor.constraint(equalTo: rootView.leadingAnchor),
@@ -134,15 +108,33 @@ final class MainViewController: NSViewController {
             updateButton.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: Layout.Content.ActionArea.buttonTopSpacing),
             updateButton.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
             updateButton.widthAnchor.constraint(equalToConstant: Layout.Content.ActionArea.buttonWidth),
+            updateButton.bottomAnchor.constraint(
+                equalTo: rootView.bottomAnchor,
+                constant: -Layout.Content.ActionArea.bottomPadding
+            ),
         ])
     }
 
-    private func makeSectionTitle(_ title: String) -> NSTextField {
-        let label = NSTextField(labelWithString: title)
-        label.font = .systemFont(ofSize: Layout.SectionTitle.pointSize, weight: .semibold)
-        label.textColor = .secondaryLabelColor
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
+    private func makeSection(title: String, content: NSView) -> NSBox {
+        let box = SectionBox()
+        box.title = title
+        (box.titleCell as? NSTextFieldCell)?.textColor = .secondaryLabelColor
+        box.contentViewMargins = NSSize(
+            width: Layout.Section.ContentPadding.horizontal,
+            height: Layout.Section.ContentPadding.vertical
+        )
+        box.translatesAutoresizingMaskIntoConstraints = false
+
+        guard let contentView = box.contentView else { return box }
+        contentView.addSubview(content)
+        NSLayoutConstraint.activate([
+            content.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            content.topAnchor.constraint(equalTo: contentView.topAnchor),
+            content.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+        ])
+
+        return box
     }
 
     private func makeFilePlaceholder() -> NSBox {
@@ -150,7 +142,7 @@ final class MainViewController: NSViewController {
         box.boxType = .custom
         box.titlePosition = .noTitle
         box.borderWidth = 0
-        box.fillColor = .quaternarySystemFill
+        box.fillColor = NSColor.labelColor.withAlphaComponent(0.04)
         box.cornerRadius = Layout.Content.File.placeholderCornerRadius
         box.translatesAutoresizingMaskIntoConstraints = false
         return box
@@ -158,7 +150,6 @@ final class MainViewController: NSViewController {
 
     private func makeRadioButton(title: String, action: Selector) -> NSButton {
         let button = NSButton(radioButtonWithTitle: title, target: self, action: action)
-        button.font = .systemFont(ofSize: Layout.RadioGroup.buttonPointSize)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }
@@ -188,6 +179,26 @@ final class MainViewController: NSViewController {
     }
 }
 
+private final class SectionBox: NSBox {
+    override var intrinsicContentSize: NSSize {
+        let nativeSize = super.intrinsicContentSize
+        let contentHeight = contentView?.fittingSize.height ?? 0
+        let titleAllowance = max(0, titleRect.height - (borderWidth * 2))
+
+        return NSSize(
+            width: nativeSize.width,
+            height: contentHeight + (contentViewMargins.height * 2) + titleAllowance
+        )
+    }
+
+    override var titleRect: NSRect {
+        super.titleRect.offsetBy(
+            dx: Layout.Section.titleHorizontalOffset,
+            dy: Layout.Section.titleVerticalOffset
+        )
+    }
+}
+
 private final class InsetDatePickerView: NSView {
     private let datePicker: NSDatePicker
 
@@ -203,38 +214,38 @@ private final class InsetDatePickerView: NSView {
         datePicker.isBordered = false
         datePicker.drawsBackground = false
         datePicker.presentsCalendarOverlay = true
+        datePicker.setContentHuggingPriority(.required, for: .horizontal)
+        datePicker.setContentHuggingPriority(.required, for: .vertical)
+        datePicker.setContentCompressionResistancePriority(.required, for: .horizontal)
+        datePicker.setContentCompressionResistancePriority(.required, for: .vertical)
         datePicker.translatesAutoresizingMaskIntoConstraints = false
 
         addSubview(datePicker)
-
         NSLayoutConstraint.activate([
-            datePicker.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Layout.DatePicker.leadingInset),
-            datePicker.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Layout.DatePicker.trailingInset),
-            datePicker.topAnchor.constraint(equalTo: topAnchor, constant: Layout.DatePicker.topInset),
-            datePicker.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -Layout.DatePicker.bottomInset),
+            datePicker.leadingAnchor.constraint(
+                equalTo: leadingAnchor,
+                constant: Layout.DatePicker.ContentPadding.leading
+            ),
+            datePicker.trailingAnchor.constraint(
+                equalTo: trailingAnchor,
+                constant: -Layout.DatePicker.ContentPadding.trailing
+            ),
+            datePicker.topAnchor.constraint(
+                equalTo: topAnchor,
+                constant: Layout.DatePicker.ContentPadding.top
+            ),
+            datePicker.bottomAnchor.constraint(
+                equalTo: bottomAnchor,
+                constant: -Layout.DatePicker.ContentPadding.bottom
+            ),
         ])
-
-        translatesAutoresizingMaskIntoConstraints = false
     }
 
     required init?(coder: NSCoder) {
         nil
     }
 
-    override var intrinsicContentSize: NSSize {
-        let pickerSize = datePicker.intrinsicContentSize
-        return NSSize(
-            width: pickerSize.width + Layout.DatePicker.intrinsicWidthAdjustment,
-            height: max(
-                pickerSize.height + Layout.DatePicker.intrinsicHeightAdjustment,
-                Layout.DatePicker.minimumHeight
-            )
-        )
-    }
-
     override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
-
         let borderRect = bounds.insetBy(dx: Layout.DatePicker.borderInset, dy: Layout.DatePicker.borderInset)
         let border = NSBezierPath(
             roundedRect: borderRect,
@@ -246,5 +257,7 @@ private final class InsetDatePickerView: NSView {
         NSColor.separatorColor.setStroke()
         border.lineWidth = Layout.DatePicker.borderWidth
         border.stroke()
+
+        super.draw(dirtyRect)
     }
 }

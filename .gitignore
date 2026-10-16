@@ -1,0 +1,22 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Icon?
+.Spotlight-V100
+.Trashes
+.fseventsd
+*.icloud
+
+# Xcode and Swift build state
+DerivedData/
+.build/
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+.swiftpm/xcode/package.xcworkspace/xcuserdata/
+
+# Compiler products
+*.o
+*.dSYM/

@@ -68,37 +68,65 @@ final class MainViewController: NSViewController {
         ].forEach(rootView.addSubview)
 
         NSLayoutConstraint.activate([
-            fileTitle.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.File.titleTop),
+            fileTitle.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.topPadding),
             fileTitle.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
 
-            filePlaceholder.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.File.placeholderTop),
+            filePlaceholder.topAnchor.constraint(
+                equalTo: fileTitle.bottomAnchor,
+                constant: Layout.Content.File.titleToPlaceholderSpacing
+            ),
             filePlaceholder.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
             filePlaceholder.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
             filePlaceholder.heightAnchor.constraint(equalToConstant: Layout.Content.File.placeholderHeight),
 
-            dateTitle.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.Date.titleTop),
+            dateTitle.topAnchor.constraint(
+                equalTo: filePlaceholder.bottomAnchor,
+                constant: Layout.Content.File.placeholderToDateTitleSpacing
+            ),
             dateTitle.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
 
-            datePicker.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.Date.pickerTop),
+            datePicker.topAnchor.constraint(
+                equalTo: dateTitle.bottomAnchor,
+                constant: Layout.Content.Date.titleToPickerSpacing
+            ),
             datePicker.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.Date.pickerLeading),
 
-            changeTitle.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.Change.titleTop),
+            changeTitle.topAnchor.constraint(
+                equalTo: datePicker.bottomAnchor,
+                constant: Layout.Content.Date.pickerToChangeTitleSpacing
+            ),
             changeTitle.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
 
-            changeGroup.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.Change.optionsTop),
-            changeGroup.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
+            changeGroup.topAnchor.constraint(
+                equalTo: changeTitle.bottomAnchor,
+                constant: Layout.Content.Change.titleToOptionsSpacing
+            ),
+            changeGroup.leadingAnchor.constraint(
+                equalTo: changeTitle.leadingAnchor,
+                constant: Layout.RadioGroup.leadingIndent
+            ),
             changeGroup.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
-            changeGroup.heightAnchor.constraint(equalToConstant: Layout.Content.Change.optionsHeight),
 
-            affectTitle.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.Affect.titleTop),
+            affectTitle.topAnchor.constraint(
+                equalTo: changeGroup.bottomAnchor,
+                constant: Layout.Content.Change.optionsToAffectTitleSpacing
+            ),
             affectTitle.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
 
-            affectGroup.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.Affect.optionsTop),
-            affectGroup.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
+            affectGroup.topAnchor.constraint(
+                equalTo: affectTitle.bottomAnchor,
+                constant: Layout.Content.Affect.titleToOptionsSpacing
+            ),
+            affectGroup.leadingAnchor.constraint(
+                equalTo: affectTitle.leadingAnchor,
+                constant: Layout.RadioGroup.leadingIndent
+            ),
             affectGroup.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
-            affectGroup.heightAnchor.constraint(equalToConstant: Layout.Content.Affect.optionsHeight),
 
-            separator.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.ActionArea.separatorTop),
+            separator.topAnchor.constraint(
+                equalTo: affectGroup.bottomAnchor,
+                constant: Layout.Content.Affect.optionsToSeparatorSpacing
+            ),
             separator.leadingAnchor.constraint(equalTo: rootView.leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: rootView.trailingAnchor),
             separator.heightAnchor.constraint(equalToConstant: Layout.Content.ActionArea.separatorHeight),
@@ -135,22 +163,14 @@ final class MainViewController: NSViewController {
         return button
     }
 
-    private func makeRadioGroup(_ buttons: [NSButton]) -> NSView {
-        let group = NSView()
-        group.translatesAutoresizingMaskIntoConstraints = false
-
-        for (index, button) in buttons.enumerated() {
-            group.addSubview(button)
-            NSLayoutConstraint.activate([
-                button.leadingAnchor.constraint(equalTo: group.leadingAnchor, constant: Layout.RadioGroup.buttonLeading),
-                button.topAnchor.constraint(
-                    equalTo: group.topAnchor,
-                    constant: Layout.RadioGroup.firstButtonTop + CGFloat(index) * Layout.RadioGroup.rowPitch
-                ),
-            ])
-        }
-
-        return group
+    private func makeRadioGroup(_ buttons: [NSButton]) -> NSStackView {
+        let stack = NSStackView(views: buttons)
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.distribution = .gravityAreas
+        stack.spacing = Layout.RadioGroup.rowSpacing
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
     }
 
     @objc private func changeSelectionChanged(_ sender: NSButton) {

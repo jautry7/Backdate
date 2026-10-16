@@ -14,35 +14,33 @@ enum Layout {
     }
 
     enum Content {
+        static let topPadding: CGFloat = 16
         static let sectionLeading: CGFloat = 16
 
         enum File {
-            static let titleTop: CGFloat = 16
-            static let placeholderTop: CGFloat = 40
+            static let titleToPlaceholderSpacing: CGFloat = 8
             static let placeholderHeight: CGFloat = 65
             static let placeholderCornerRadius: CGFloat = 8
+            static let placeholderToDateTitleSpacing: CGFloat = 20
         }
 
         enum Date {
-            static let titleTop: CGFloat = 125
-            static let pickerTop: CGFloat = 145
+            static let titleToPickerSpacing: CGFloat = 4
             static let pickerLeading: CGFloat = 24
+            static let pickerToChangeTitleSpacing: CGFloat = 31
         }
 
         enum Change {
-            static let titleTop: CGFloat = 205
-            static let optionsTop: CGFloat = 229
-            static let optionsHeight: CGFloat = 60
+            static let titleToOptionsSpacing: CGFloat = 12
+            static let optionsToAffectTitleSpacing: CGFloat = 28
         }
 
         enum Affect {
-            static let titleTop: CGFloat = 309
-            static let optionsTop: CGFloat = 333
-            static let optionsHeight: CGFloat = 90
+            static let titleToOptionsSpacing: CGFloat = 12
+            static let optionsToSeparatorSpacing: CGFloat = 24
         }
 
         enum ActionArea {
-            static let separatorTop: CGFloat = 439
             static let separatorHeight: CGFloat = 1
             static let buttonTopSpacing: CGFloat = 15
             static let buttonWidth: CGFloat = 86
@@ -55,9 +53,8 @@ enum Layout {
 
     enum RadioGroup {
         static let buttonPointSize: CGFloat = 13
-        static let buttonLeading: CGFloat = 8
-        static let firstButtonTop: CGFloat = 4
-        static let rowPitch: CGFloat = 30
+        static let leadingIndent: CGFloat = 8
+        static let rowSpacing: CGFloat = 12
     }
 
     enum DatePicker {

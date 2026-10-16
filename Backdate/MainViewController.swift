@@ -194,7 +194,7 @@ private final class DropAreaView: NSView {
     private let promptLabel = NSTextField(labelWithString: "Drop your file here")
     private let borderLayer = CAShapeLayer()
     private var isDragHighlighted = false {
-        didSet { updateAppearance() }
+        didSet { needsDisplay = true }
     }
 
     override init(frame frameRect: NSRect) {
@@ -222,7 +222,7 @@ private final class DropAreaView: NSView {
         ])
 
         registerForDraggedTypes([.fileURL])
-        updateAppearance()
+        needsDisplay = true
     }
 
     required init?(coder: NSCoder) {
@@ -242,9 +242,26 @@ private final class DropAreaView: NSView {
         )
     }
 
+    override var wantsUpdateLayer: Bool {
+        true
+    }
+
+    override func updateLayer() {
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            borderLayer.strokeColor = isDragHighlighted
+                ? NSColor.controlAccentColor.cgColor
+                : NSColor.separatorColor.cgColor
+            layer?.backgroundColor = isDragHighlighted
+                ? NSColor.controlAccentColor.withAlphaComponent(0.08).cgColor
+                : NSColor.clear.cgColor
+        }
+        promptLabel.textColor = isDragHighlighted ? .controlAccentColor : .secondaryLabelColor
+        promptLabel.alphaValue = isDragHighlighted ? 1 : 0.7
+    }
+
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
-        updateAppearance()
+        needsDisplay = true
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
@@ -270,18 +287,6 @@ private final class DropAreaView: NSView {
         return containsFile ? .copy : []
     }
 
-    private func updateAppearance() {
-        effectiveAppearance.performAsCurrentDrawingAppearance {
-            borderLayer.strokeColor = isDragHighlighted
-                ? NSColor.controlAccentColor.cgColor
-                : NSColor.separatorColor.cgColor
-            layer?.backgroundColor = isDragHighlighted
-                ? NSColor.controlAccentColor.withAlphaComponent(0.08).cgColor
-                : NSColor.clear.cgColor
-        }
-        promptLabel.textColor = isDragHighlighted ? .controlAccentColor : .secondaryLabelColor
-        promptLabel.alphaValue = isDragHighlighted ? 1 : 0.7
-    }
 }
 
 private extension NSBox {

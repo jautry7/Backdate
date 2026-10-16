@@ -8,7 +8,7 @@ enum Layout {
      */
 
     enum Window {
-        static let contentWidth: CGFloat = 420
+        static let contentWidth: CGFloat = 480
     }
 
     enum Content {
@@ -19,10 +19,13 @@ enum Layout {
         static let boxBottomMarginLast: CGFloat = 20
 
         enum File {
-            static let dropAreaHeight: CGFloat = 65
+            static let dropAreaHeight: CGFloat = 64
             static let borderWidth: CGFloat = 1
             static let dashLength: CGFloat = 4
             static let dashSpacing: CGFloat = 4
+            static let horizontalPadding: CGFloat = 16
+            static let itemSpacing: CGFloat = 16
+            static let iconSize: CGFloat = 32
         }
 
     }

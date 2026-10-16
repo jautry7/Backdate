@@ -73,10 +73,7 @@ final class MainViewController: NSViewController {
             fileSection.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.topPadding),
             fileSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
             fileSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
-            fileArea.heightAnchor.constraint(
-                equalToConstant: Layout.Content.File.dropAreaHeight
-                    + (Layout.Section.ContentPadding.vertical * 2)
-            ),
+            fileArea.heightAnchor.constraint(equalToConstant: Layout.Content.File.dropAreaHeight),
 
             dateSection.topAnchor.constraint(
                 equalTo: fileSection.bottomAnchor,
@@ -192,7 +189,15 @@ private final class DropAreaView: NSView {
     }
 
     private let promptLabel = NSTextField(labelWithString: "Drop your file here")
+    private let iconView = NSImageView()
+    private let titleLabel = NSTextField(labelWithString: "")
+    private let pathLabel = NSTextField(labelWithString: "")
+    private let removeButton = NSButton()
+    private let previewView = NSView()
     private let borderLayer = CAShapeLayer()
+    private var fileURL: URL? {
+        didSet { updateFilePreview() }
+    }
     private var isDragHighlighted = false {
         didSet { needsDisplay = true }
     }
@@ -216,9 +221,80 @@ private final class DropAreaView: NSView {
         promptLabel.alignment = .center
         promptLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(promptLabel)
+
+        iconView.imageScaling = .scaleProportionallyUpOrDown
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+
+        let titleFont = NSFont.preferredFont(forTextStyle: .title3)
+        titleLabel.font = .systemFont(ofSize: titleFont.pointSize, weight: .semibold)
+        titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        pathLabel.font = NSFont.preferredFont(forTextStyle: .callout)
+        pathLabel.textColor = .secondaryLabelColor
+        pathLabel.lineBreakMode = .byTruncatingTail
+        pathLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        pathLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let textStack = NSStackView(views: [titleLabel, pathLabel])
+        textStack.orientation = .vertical
+        textStack.alignment = .leading
+        textStack.spacing = 0
+        textStack.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        textStack.translatesAutoresizingMaskIntoConstraints = false
+
+        removeButton.image = NSImage(
+            systemSymbolName: "xmark.circle",
+            accessibilityDescription: "Remove file"
+        )
+        removeButton.imagePosition = .imageOnly
+        removeButton.isBordered = false
+        removeButton.contentTintColor = .tertiaryLabelColor
+        removeButton.toolTip = "Remove file"
+        removeButton.target = self
+        removeButton.action = #selector(removeFile)
+        removeButton.translatesAutoresizingMaskIntoConstraints = false
+
+        previewView.addSubview(iconView)
+        previewView.addSubview(textStack)
+        previewView.addSubview(removeButton)
+        previewView.translatesAutoresizingMaskIntoConstraints = false
+        previewView.isHidden = true
+        addSubview(previewView)
+
         NSLayoutConstraint.activate([
             promptLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             promptLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+
+            previewView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            previewView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            previewView.topAnchor.constraint(equalTo: topAnchor),
+            previewView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            iconView.leadingAnchor.constraint(
+                equalTo: previewView.leadingAnchor,
+                constant: Layout.Content.File.horizontalPadding
+            ),
+            iconView.centerYAnchor.constraint(equalTo: previewView.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: Layout.Content.File.iconSize),
+            iconView.heightAnchor.constraint(equalToConstant: Layout.Content.File.iconSize),
+
+            textStack.leadingAnchor.constraint(
+                equalTo: iconView.trailingAnchor,
+                constant: Layout.Content.File.itemSpacing
+            ),
+            textStack.centerYAnchor.constraint(equalTo: previewView.centerYAnchor),
+
+            removeButton.leadingAnchor.constraint(
+                equalTo: textStack.trailingAnchor,
+                constant: Layout.Content.File.itemSpacing
+            ),
+            removeButton.trailingAnchor.constraint(
+                equalTo: previewView.trailingAnchor,
+                constant: -Layout.Content.File.horizontalPadding
+            ),
+            removeButton.centerYAnchor.constraint(equalTo: previewView.centerYAnchor),
         ])
 
         registerForDraggedTypes([.fileURL])
@@ -251,10 +327,20 @@ private final class DropAreaView: NSView {
             borderLayer.strokeColor = isDragHighlighted
                 ? NSColor.controlAccentColor.cgColor
                 : NSColor.separatorColor.cgColor
-            layer?.backgroundColor = isDragHighlighted
-                ? NSColor.controlAccentColor.withAlphaComponent(0.08).cgColor
-                : NSColor.clear.cgColor
+            layer?.backgroundColor = if isDragHighlighted {
+                NSColor.controlAccentColor.withAlphaComponent(0.08).cgColor
+            } else if fileURL != nil {
+                NSColor.controlBackgroundColor.cgColor
+            } else {
+                NSColor.clear.cgColor
+            }
         }
+        borderLayer.lineDashPattern = fileURL == nil
+            ? [
+                NSNumber(value: Layout.Content.File.dashLength),
+                NSNumber(value: Layout.Content.File.dashSpacing),
+            ]
+            : nil
         promptLabel.textColor = isDragHighlighted ? .controlAccentColor : .secondaryLabelColor
         promptLabel.alphaValue = isDragHighlighted ? 1 : 0.7
     }
@@ -278,13 +364,43 @@ private final class DropAreaView: NSView {
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         isDragHighlighted = false
-        return false
+        guard let url = (sender.draggingPasteboard.readObjects(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL])?.first else {
+            return false
+        }
+
+        fileURL = url
+        return true
     }
 
     private func updateDragState(_ sender: NSDraggingInfo) -> NSDragOperation {
         let containsFile = sender.draggingPasteboard.availableType(from: [.fileURL]) != nil
         isDragHighlighted = containsFile
         return containsFile ? .copy : []
+    }
+
+    private func updateFilePreview() {
+        guard let fileURL else {
+            promptLabel.isHidden = false
+            previewView.isHidden = true
+            needsDisplay = true
+            return
+        }
+
+        let friendlyPath = (fileURL.path as NSString).abbreviatingWithTildeInPath
+        iconView.image = NSWorkspace.shared.icon(forFile: fileURL.path)
+        titleLabel.stringValue = fileURL.lastPathComponent
+        pathLabel.stringValue = friendlyPath
+        pathLabel.toolTip = fileURL.path
+        promptLabel.isHidden = true
+        previewView.isHidden = false
+        needsDisplay = true
+    }
+
+    @objc private func removeFile() {
+        fileURL = nil
     }
 
 }

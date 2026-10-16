@@ -52,10 +52,6 @@ final class MainViewController: NSViewController {
         let affectGroup = makeRadioGroup(affectButtons)
         let affectSection = makeSection(title: "Affect", content: affectGroup)
 
-        let separator = NSBox()
-        separator.boxType = .separator
-        separator.translatesAutoresizingMaskIntoConstraints = false
-
         let updateButton = NSButton(title: "Update", target: nil, action: nil)
         updateButton.controlSize = .regular
         updateButton.keyEquivalent = "\r"
@@ -66,51 +62,44 @@ final class MainViewController: NSViewController {
             dateSection,
             changeSection,
             affectSection,
-            separator,
             updateButton,
         ].forEach(rootView.addSubview)
 
         NSLayoutConstraint.activate([
             fileSection.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.topPadding),
-            fileSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
-            fileSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
+            fileSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
+            fileSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
             filePlaceholder.heightAnchor.constraint(equalToConstant: Layout.Content.File.placeholderHeight),
 
             dateSection.topAnchor.constraint(
                 equalTo: fileSection.bottomAnchor,
-                constant: Layout.Content.File.placeholderToDateTitleSpacing
+                constant: Layout.Content.boxBottomMargin
             ),
-            dateSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
-            dateSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
+            dateSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
+            dateSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
 
             changeSection.topAnchor.constraint(
                 equalTo: dateSection.bottomAnchor,
-                constant: Layout.Content.Date.pickerToChangeTitleSpacing
+                constant: Layout.Content.boxBottomMargin
             ),
-            changeSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
-            changeSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
+            changeSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
+            changeSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
 
             affectSection.topAnchor.constraint(
                 equalTo: changeSection.bottomAnchor,
-                constant: Layout.Content.Change.optionsToAffectTitleSpacing
+                constant: Layout.Content.boxBottomMargin
             ),
-            affectSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.sectionLeading),
-            affectSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
+            affectSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
+            affectSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
 
-            separator.topAnchor.constraint(
+            updateButton.topAnchor.constraint(
                 equalTo: affectSection.bottomAnchor,
-                constant: Layout.Content.Affect.optionsToSeparatorSpacing
+                constant: Layout.Content.boxBottomMarginLast
             ),
-            separator.leadingAnchor.constraint(equalTo: rootView.leadingAnchor),
-            separator.trailingAnchor.constraint(equalTo: rootView.trailingAnchor),
-            separator.heightAnchor.constraint(equalToConstant: Layout.Content.ActionArea.separatorHeight),
-
-            updateButton.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: Layout.Content.ActionArea.buttonTopSpacing),
-            updateButton.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.sectionLeading),
-            updateButton.widthAnchor.constraint(equalToConstant: Layout.Content.ActionArea.buttonWidth),
+            updateButton.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
             updateButton.bottomAnchor.constraint(
                 equalTo: rootView.bottomAnchor,
-                constant: -Layout.Content.ActionArea.bottomPadding
+                constant: -Layout.Content.bottomPadding
             ),
         ])
     }
@@ -118,6 +107,7 @@ final class MainViewController: NSViewController {
     private func makeSection(title: String, content: NSView) -> NSBox {
         let box = SectionBox()
         box.title = title
+        box.titleFont = .preferredFont(forTextStyle: .callout)
         (box.titleCell as? NSTextFieldCell)?.textColor = .secondaryLabelColor
         box.contentViewMargins = NSSize(
             width: Layout.Section.ContentPadding.horizontal,

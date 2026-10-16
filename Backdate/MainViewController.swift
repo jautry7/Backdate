@@ -8,20 +8,11 @@ final class MainViewController: NSViewController {
         let rootView = NSView()
         view = rootView
 
-        let filePrompt = NSTextField(labelWithString: "Drop your file here")
-        filePrompt.font = NSFont.preferredFont(forTextStyle: .title3)
-        filePrompt.textColor = .secondaryLabelColor
-        filePrompt.alphaValue = 0.7
-        filePrompt.alignment = .center
-        filePrompt.translatesAutoresizingMaskIntoConstraints = false
-        let fileArea = NSView()
+        let fileArea = DropAreaView()
         fileArea.translatesAutoresizingMaskIntoConstraints = false
-        fileArea.addSubview(filePrompt)
-        NSLayoutConstraint.activate([
-            filePrompt.centerXAnchor.constraint(equalTo: fileArea.centerXAnchor),
-            filePrompt.centerYAnchor.constraint(equalTo: fileArea.centerYAnchor),
-        ])
         let fileSection = makeSection(title: "File", content: fileArea)
+        fileSection.contentViewMargins = .zero
+        fileArea.sourceBox = fileSection
 
         let dateDescription = NSTextField(labelWithString: "Format MM/DD/YYYY:")
         dateDescription.translatesAutoresizingMaskIntoConstraints = false
@@ -82,7 +73,10 @@ final class MainViewController: NSViewController {
             fileSection.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.topPadding),
             fileSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
             fileSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
-            fileArea.heightAnchor.constraint(equalToConstant: Layout.Content.File.dropAreaHeight),
+            fileArea.heightAnchor.constraint(
+                equalToConstant: Layout.Content.File.dropAreaHeight
+                    + (Layout.Section.ContentPadding.vertical * 2)
+            ),
 
             dateSection.topAnchor.constraint(
                 equalTo: fileSection.bottomAnchor,
@@ -192,6 +186,121 @@ private final class SectionBox: NSBox {
     }
 }
 
+private final class DropAreaView: NSView {
+    weak var sourceBox: NSBox? {
+        didSet { needsLayout = true }
+    }
+
+    private let promptLabel = NSTextField(labelWithString: "Drop your file here")
+    private let borderLayer = CAShapeLayer()
+    private var isDragHighlighted = false {
+        didSet { updateAppearance() }
+    }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+
+        wantsLayer = true
+        layer?.masksToBounds = true
+
+        borderLayer.fillColor = nil
+        borderLayer.lineWidth = Layout.Content.File.borderWidth
+        borderLayer.lineCap = .round
+        borderLayer.lineDashPattern = [
+            NSNumber(value: Layout.Content.File.dashLength),
+            NSNumber(value: Layout.Content.File.dashSpacing),
+        ]
+        layer?.addSublayer(borderLayer)
+
+        promptLabel.font = NSFont.preferredFont(forTextStyle: .title3)
+        promptLabel.alignment = .center
+        promptLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(promptLabel)
+        NSLayoutConstraint.activate([
+            promptLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
+            promptLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+        ])
+
+        registerForDraggedTypes([.fileURL])
+        updateAppearance()
+    }
+
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    override func layout() {
+        super.layout()
+        let cornerRadius = sourceBox?.systemBackgroundCornerRadius ?? 0
+        layer?.cornerRadius = cornerRadius
+        let borderInset = Layout.Content.File.borderWidth / 2
+        borderLayer.path = CGPath(
+            roundedRect: bounds.insetBy(dx: borderInset, dy: borderInset),
+            cornerWidth: cornerRadius,
+            cornerHeight: cornerRadius,
+            transform: nil
+        )
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateAppearance()
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        updateDragState(sender)
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        updateDragState(sender)
+    }
+
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        isDragHighlighted = false
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        isDragHighlighted = false
+        return false
+    }
+
+    private func updateDragState(_ sender: NSDraggingInfo) -> NSDragOperation {
+        let containsFile = sender.draggingPasteboard.availableType(from: [.fileURL]) != nil
+        isDragHighlighted = containsFile
+        return containsFile ? .copy : []
+    }
+
+    private func updateAppearance() {
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            borderLayer.strokeColor = isDragHighlighted
+                ? NSColor.controlAccentColor.cgColor
+                : NSColor.separatorColor.cgColor
+            layer?.backgroundColor = isDragHighlighted
+                ? NSColor.controlAccentColor.withAlphaComponent(0.08).cgColor
+                : NSColor.clear.cgColor
+        }
+        promptLabel.textColor = isDragHighlighted ? .controlAccentColor : .secondaryLabelColor
+        promptLabel.alphaValue = isDragHighlighted ? 1 : 0.7
+    }
+}
+
+private extension NSBox {
+    var systemBackgroundCornerRadius: CGFloat? {
+        layoutSubtreeIfNeeded()
+
+        return subviews
+            .filter { $0 !== contentView }
+            .compactMap(\.layer)
+            .flatMap(positiveCornerRadii(in:))
+            .max()
+    }
+
+    func positiveCornerRadii(in rootLayer: CALayer) -> [CGFloat] {
+        let ownRadius = rootLayer.cornerRadius > 0 ? [rootLayer.cornerRadius] : []
+        return ownRadius + (rootLayer.sublayers ?? []).flatMap(positiveCornerRadii(in:))
+    }
+}
+
 private final class InsetDatePickerView: NSView {
     private let datePicker: NSDatePicker
 
@@ -206,7 +315,7 @@ private final class InsetDatePickerView: NSView {
         datePicker.isBezeled = false
         datePicker.isBordered = false
         datePicker.drawsBackground = false
-        datePicker.presentsCalendarOverlay = true
+        datePicker.presentsCalendarOverlay = false
         datePicker.setContentHuggingPriority(.required, for: .horizontal)
         datePicker.setContentHuggingPriority(.required, for: .vertical)
         datePicker.setContentCompressionResistancePriority(.required, for: .horizontal)

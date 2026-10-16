@@ -73,7 +73,7 @@ final class MainViewController: NSViewController {
             fileSection.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.topPadding),
             fileSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
             fileSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
-            fileArea.heightAnchor.constraint(equalToConstant: Layout.Content.File.dropAreaHeight),
+            fileArea.heightAnchor.constraint(greaterThanOrEqualToConstant: Layout.Content.File.dropAreaHeight),
 
             dateSection.topAnchor.constraint(
                 equalTo: fileSection.bottomAnchor,
@@ -240,13 +240,15 @@ private final class DropAreaView: NSView {
         let textStack = NSStackView(views: [titleLabel, pathLabel])
         textStack.orientation = .vertical
         textStack.alignment = .leading
-        textStack.spacing = 0
+        textStack.spacing = Layout.Content.File.Preview.textLineSpacing
         textStack.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         textStack.translatesAutoresizingMaskIntoConstraints = false
 
         removeButton.image = NSImage(
             systemSymbolName: "xmark.circle",
             accessibilityDescription: "Remove file"
+        )?.withSymbolConfiguration(
+            .init(pointSize: Layout.Content.File.Preview.closeButtonSize, weight: .regular)
         )
         removeButton.imagePosition = .imageOnly
         removeButton.isBordered = false
@@ -274,27 +276,49 @@ private final class DropAreaView: NSView {
 
             iconView.leadingAnchor.constraint(
                 equalTo: previewView.leadingAnchor,
-                constant: Layout.Content.File.horizontalPadding
+                constant: Layout.Content.File.Preview.leadingPadding
             ),
             iconView.centerYAnchor.constraint(equalTo: previewView.centerYAnchor),
-            iconView.widthAnchor.constraint(equalToConstant: Layout.Content.File.iconSize),
-            iconView.heightAnchor.constraint(equalToConstant: Layout.Content.File.iconSize),
+            iconView.topAnchor.constraint(
+                greaterThanOrEqualTo: previewView.topAnchor,
+                constant: Layout.Content.File.Preview.verticalPadding
+            ),
+            iconView.bottomAnchor.constraint(
+                lessThanOrEqualTo: previewView.bottomAnchor,
+                constant: -Layout.Content.File.Preview.verticalPadding
+            ),
+            iconView.widthAnchor.constraint(equalToConstant: Layout.Content.File.Preview.iconSize),
+            iconView.heightAnchor.constraint(equalToConstant: Layout.Content.File.Preview.iconSize),
 
             textStack.leadingAnchor.constraint(
                 equalTo: iconView.trailingAnchor,
-                constant: Layout.Content.File.itemSpacing
+                constant: Layout.Content.File.Preview.iconTextSpacing
             ),
             textStack.centerYAnchor.constraint(equalTo: previewView.centerYAnchor),
+            textStack.topAnchor.constraint(
+                greaterThanOrEqualTo: previewView.topAnchor,
+                constant: Layout.Content.File.Preview.verticalPadding
+            ),
+            textStack.bottomAnchor.constraint(
+                lessThanOrEqualTo: previewView.bottomAnchor,
+                constant: -Layout.Content.File.Preview.verticalPadding
+            ),
 
             removeButton.leadingAnchor.constraint(
                 equalTo: textStack.trailingAnchor,
-                constant: Layout.Content.File.itemSpacing
+                constant: Layout.Content.File.Preview.textCloseButtonSpacing
             ),
             removeButton.trailingAnchor.constraint(
                 equalTo: previewView.trailingAnchor,
-                constant: -Layout.Content.File.horizontalPadding
+                constant: -Layout.Content.File.Preview.trailingPadding
             ),
             removeButton.centerYAnchor.constraint(equalTo: previewView.centerYAnchor),
+            removeButton.widthAnchor.constraint(
+                equalToConstant: Layout.Content.File.Preview.closeButtonSize
+            ),
+            removeButton.heightAnchor.constraint(
+                equalToConstant: Layout.Content.File.Preview.closeButtonSize
+            ),
         ])
 
         registerForDraggedTypes([.fileURL])

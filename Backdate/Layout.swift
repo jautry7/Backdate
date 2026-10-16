@@ -23,9 +23,17 @@ enum Layout {
             static let borderWidth: CGFloat = 1
             static let dashLength: CGFloat = 4
             static let dashSpacing: CGFloat = 4
-            static let horizontalPadding: CGFloat = 16
-            static let itemSpacing: CGFloat = 16
-            static let iconSize: CGFloat = 32
+
+            enum Preview {
+                static let leadingPadding: CGFloat = 16
+                static let trailingPadding: CGFloat = 22
+                static let verticalPadding: CGFloat = 16
+                static let iconTextSpacing: CGFloat = 14
+                static let textCloseButtonSpacing: CGFloat = 18
+                static let textLineSpacing: CGFloat = 3
+                static let iconSize: CGFloat = 32
+                static let closeButtonSize: CGFloat = 16
+            }
         }
 
     }

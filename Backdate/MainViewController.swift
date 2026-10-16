@@ -1,22 +1,29 @@
 import AppKit
 
 final class MainViewController: NSViewController {
+    private let fileArea = DropAreaView()
+    private let datePicker = InsetDatePickerView()
+    private let updateButton = NSButton(title: "Update", target: nil, action: nil)
     private var changeButtons: [NSButton] = []
     private var affectButtons: [NSButton] = []
+    private var selectedFileURL: URL?
+    private var isUpdating = false
 
     override func loadView() {
         let rootView = NSView()
         view = rootView
 
-        let fileArea = DropAreaView()
         fileArea.translatesAutoresizingMaskIntoConstraints = false
         let fileSection = makeSection(title: "File", content: fileArea)
         fileSection.contentViewMargins = .zero
         fileArea.sourceBox = fileSection
+        fileArea.onFileURLChanged = { [weak self] url in
+            self?.selectedFileURL = url
+            self?.updateUpdateButtonState()
+        }
 
         let dateDescription = NSTextField(labelWithString: "Format MM/DD/YYYY:")
         dateDescription.translatesAutoresizingMaskIntoConstraints = false
-        let datePicker = InsetDatePickerView()
         let dateSpacer = NSView()
         dateSpacer.translatesAutoresizingMaskIntoConstraints = false
         let dateRow = NSStackView(views: [dateDescription, datePicker, dateSpacer])
@@ -27,14 +34,18 @@ final class MainViewController: NSViewController {
         let dateSection = makeSection(title: "New date", content: dateRow)
 
         let createdAndModifiedButton = makeRadioButton(
-            title: "Created & modified date",
+            title: "Both created & modified dates",
             action: #selector(changeSelectionChanged(_:))
         )
         let modifiedOnlyButton = makeRadioButton(
             title: "Modified date only",
             action: #selector(changeSelectionChanged(_:))
         )
-        changeButtons = [createdAndModifiedButton, modifiedOnlyButton]
+        let createdOnlyButton = makeRadioButton(
+            title: "Created date only",
+            action: #selector(changeSelectionChanged(_:))
+        )
+        changeButtons = [createdAndModifiedButton, createdOnlyButton, modifiedOnlyButton]
         createdAndModifiedButton.state = .on
         let changeGroup = makeRadioGroup(changeButtons)
         let changeSection = makeSection(title: "Change", content: changeGroup)
@@ -56,9 +67,11 @@ final class MainViewController: NSViewController {
         let affectGroup = makeRadioGroup(affectButtons)
         let affectSection = makeSection(title: "Affect", content: affectGroup)
 
-        let updateButton = NSButton(title: "Update", target: nil, action: nil)
         updateButton.controlSize = .regular
         updateButton.keyEquivalent = "\r"
+        updateButton.target = self
+        updateButton.action = #selector(updateDates)
+        updateButton.isEnabled = false
         updateButton.translatesAutoresizingMaskIntoConstraints = false
 
         [
@@ -161,6 +174,83 @@ final class MainViewController: NSViewController {
             button.state = button === selectedButton ? .on : .off
         }
     }
+
+    private func updateUpdateButtonState() {
+        updateButton.isEnabled = selectedFileURL != nil && !isUpdating
+    }
+
+    @objc private func updateDates() {
+        guard let selectedFileURL else { return }
+
+        let changeMode: DateChangeMode
+        switch changeButtons.firstIndex(where: { $0.state == .on }) {
+        case 1:
+            changeMode = .createdOnly
+        case 2:
+            changeMode = .modifiedOnly
+        default:
+            changeMode = .createdAndModified
+        }
+        let scope: ItemScope
+        switch affectButtons.firstIndex(where: { $0.state == .on }) {
+        case 1:
+            scope = .nextLevel
+        case 2:
+            scope = .allDescendants
+        default:
+            scope = .selectedItem
+        }
+
+        isUpdating = true
+        updateButton.title = "Updating…"
+        updateUpdateButtonState()
+
+        let date = datePicker.dateValue
+        Task {
+            let result = await Task.detached(priority: .userInitiated) {
+                DateUpdater.update(
+                    url: selectedFileURL,
+                    date: date,
+                    mode: changeMode,
+                    scope: scope
+                )
+            }.value
+            finishUpdate(result)
+        }
+    }
+
+    private func finishUpdate(_ result: DateUpdateResult) {
+        isUpdating = false
+        updateButton.title = "Update"
+        updateUpdateButtonState()
+
+        let alert = NSAlert()
+        if result.failures.isEmpty {
+            alert.alertStyle = .informational
+            alert.messageText = result.updatedCount == 1
+                ? "Updated 1 item"
+                : "Updated \(result.updatedCount) items"
+            alert.informativeText = "The selected dates were updated successfully."
+        } else {
+            alert.alertStyle = result.updatedCount == 0 ? .critical : .warning
+            alert.messageText = result.updatedCount == 0
+                ? "The dates could not be updated"
+                : "Some items could not be updated"
+
+            let failureSummary = result.failures.prefix(3).map {
+                "\($0.url.lastPathComponent): \($0.message)"
+            }.joined(separator: "\n")
+            let remainingCount = result.failures.count - min(3, result.failures.count)
+            alert.informativeText = failureSummary
+                + (remainingCount > 0 ? "\n…and \(remainingCount) more." : "")
+        }
+
+        if let window = view.window {
+            alert.beginSheetModal(for: window)
+        } else {
+            alert.runModal()
+        }
+    }
 }
 
 private final class SectionBox: NSBox {
@@ -184,6 +274,8 @@ private final class SectionBox: NSBox {
 }
 
 private final class DropAreaView: NSView {
+    var onFileURLChanged: ((URL?) -> Void)?
+
     weak var sourceBox: NSBox? {
         didSet { needsLayout = true }
     }
@@ -196,7 +288,10 @@ private final class DropAreaView: NSView {
     private let previewView = NSView()
     private let borderLayer = CAShapeLayer()
     private var fileURL: URL? {
-        didSet { updateFilePreview() }
+        didSet {
+            updateFilePreview()
+            onFileURLChanged?(fileURL)
+        }
     }
     private var isDragHighlighted = false {
         didSet { needsDisplay = true }
@@ -388,10 +483,7 @@ private final class DropAreaView: NSView {
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         isDragHighlighted = false
-        guard let url = (sender.draggingPasteboard.readObjects(
-            forClasses: [NSURL.self],
-            options: [.urlReadingFileURLsOnly: true]
-        ) as? [URL])?.first else {
+        guard let url = draggedFileURLs(from: sender).first else {
             return false
         }
 
@@ -400,9 +492,18 @@ private final class DropAreaView: NSView {
     }
 
     private func updateDragState(_ sender: NSDraggingInfo) -> NSDragOperation {
-        let containsFile = sender.draggingPasteboard.availableType(from: [.fileURL]) != nil
-        isDragHighlighted = containsFile
-        return containsFile ? .copy : []
+        let fileURLs = draggedFileURLs(from: sender)
+        let acceptsDrop = fileURLs.count == 1
+            && FileManager.default.fileExists(atPath: fileURLs[0].path)
+        isDragHighlighted = acceptsDrop
+        return acceptsDrop ? .copy : []
+    }
+
+    private func draggedFileURLs(from sender: NSDraggingInfo) -> [URL] {
+        sender.draggingPasteboard.readObjects(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL] ?? []
     }
 
     private func updateFilePreview() {
@@ -448,6 +549,10 @@ private extension NSBox {
 
 private final class InsetDatePickerView: NSView {
     private let datePicker: NSDatePicker
+
+    var dateValue: Date {
+        datePicker.dateValue
+    }
 
     override init(frame frameRect: NSRect) {
         datePicker = NSDatePicker()

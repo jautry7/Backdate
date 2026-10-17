@@ -13,10 +13,11 @@ enum Layout {
 
     enum Content {
         static let topPadding: CGFloat = 24
-        static let bottomPadding: CGFloat = 22
+        static let bottomPadding: CGFloat = 24
         static let horizontalPadding: CGFloat = 16
-        static let boxBottomMargin: CGFloat = 24
+        static let boxBottomMargin: CGFloat = 28
         static let boxBottomMarginLast: CGFloat = 20
+        static let statusLeadingPadding: CGFloat = 8
 
         enum File {
             static let dropAreaHeight: CGFloat = 64

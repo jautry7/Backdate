@@ -3,11 +3,13 @@ import AppKit
 final class MainViewController: NSViewController {
     private let fileArea = DropAreaView()
     private let datePicker = InsetDatePickerView()
+    private let statusLabel = NSTextField(labelWithString: "")
     private let updateButton = NSButton(title: "Update", target: nil, action: nil)
     private var changeButtons: [NSButton] = []
     private var affectButtons: [NSButton] = []
     private var selectedFileURL: URL?
     private var isUpdating = false
+    private var statusFadeWorkItem: DispatchWorkItem?
 
     override func loadView() {
         let rootView = NSView()
@@ -19,6 +21,7 @@ final class MainViewController: NSViewController {
         fileArea.sourceBox = fileSection
         fileArea.onFileURLChanged = { [weak self] url in
             self?.selectedFileURL = url
+            self?.clearStatus()
             self?.updateUpdateButtonState()
         }
 
@@ -34,7 +37,7 @@ final class MainViewController: NSViewController {
         let dateSection = makeSection(title: "New date", content: dateRow)
 
         let createdAndModifiedButton = makeRadioButton(
-            title: "Both created & modified dates",
+            title: "Both modified and created",
             action: #selector(changeSelectionChanged(_:))
         )
         let modifiedOnlyButton = makeRadioButton(
@@ -67,6 +70,11 @@ final class MainViewController: NSViewController {
         let affectGroup = makeRadioGroup(affectButtons)
         let affectSection = makeSection(title: "Affect", content: affectGroup)
 
+        statusLabel.textColor = .systemGreen
+        statusLabel.lineBreakMode = .byTruncatingTail
+        statusLabel.isHidden = true
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+
         updateButton.controlSize = .regular
         updateButton.keyEquivalent = "\r"
         updateButton.target = self
@@ -79,6 +87,7 @@ final class MainViewController: NSViewController {
             dateSection,
             changeSection,
             affectSection,
+            statusLabel,
             updateButton,
         ].forEach(rootView.addSubview)
 
@@ -113,6 +122,15 @@ final class MainViewController: NSViewController {
                 equalTo: affectSection.bottomAnchor,
                 constant: Layout.Content.boxBottomMarginLast
             ),
+            statusLabel.leadingAnchor.constraint(
+                equalTo: rootView.leadingAnchor,
+                constant: Layout.Content.horizontalPadding + Layout.Content.statusLeadingPadding
+            ),
+            statusLabel.trailingAnchor.constraint(
+                lessThanOrEqualTo: updateButton.leadingAnchor,
+                constant: -Layout.Content.horizontalPadding
+            ),
+            statusLabel.centerYAnchor.constraint(equalTo: updateButton.centerYAnchor),
             updateButton.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
             updateButton.bottomAnchor.constraint(
                 equalTo: rootView.bottomAnchor,
@@ -202,6 +220,7 @@ final class MainViewController: NSViewController {
         }
 
         isUpdating = true
+        clearStatus()
         updateButton.title = "Updating…"
         updateUpdateButtonState()
 
@@ -215,41 +234,71 @@ final class MainViewController: NSViewController {
                     scope: scope
                 )
             }.value
-            finishUpdate(result)
+            finishUpdate(result, changeMode: changeMode)
         }
     }
 
-    private func finishUpdate(_ result: DateUpdateResult) {
+    private func finishUpdate(_ result: DateUpdateResult, changeMode: DateChangeMode) {
         isUpdating = false
         updateButton.title = "Update"
         updateUpdateButtonState()
 
-        let alert = NSAlert()
         if result.failures.isEmpty {
-            alert.alertStyle = .informational
-            alert.messageText = result.updatedCount == 1
-                ? "Updated 1 item"
-                : "Updated \(result.updatedCount) items"
-            alert.informativeText = "The selected dates were updated successfully."
-        } else {
-            alert.alertStyle = result.updatedCount == 0 ? .critical : .warning
-            alert.messageText = result.updatedCount == 0
-                ? "The dates could not be updated"
-                : "Some items could not be updated"
-
-            let failureSummary = result.failures.prefix(3).map {
-                "\($0.url.lastPathComponent): \($0.message)"
-            }.joined(separator: "\n")
-            let remainingCount = result.failures.count - min(3, result.failures.count)
-            alert.informativeText = failureSummary
-                + (remainingCount > 0 ? "\n…and \(remainingCount) more." : "")
+            switch changeMode {
+            case .createdOnly:
+                showStatus("Changed date created")
+            case .modifiedOnly:
+                showStatus("Changed date modified")
+            case .createdAndModified:
+                showStatus("Changed date modified & date created")
+            }
+            return
         }
+
+        let alert = NSAlert()
+        alert.alertStyle = result.updatedCount == 0 ? .critical : .warning
+        alert.messageText = result.updatedCount == 0
+            ? "The dates could not be updated"
+            : "Some items could not be updated"
+
+        let failureSummary = result.failures.prefix(3).map {
+            "\($0.url.lastPathComponent): \($0.message)"
+        }.joined(separator: "\n")
+        let remainingCount = result.failures.count - min(3, result.failures.count)
+        alert.informativeText = failureSummary
+            + (remainingCount > 0 ? "\n…and \(remainingCount) more." : "")
 
         if let window = view.window {
             alert.beginSheetModal(for: window)
         } else {
             alert.runModal()
         }
+    }
+
+    private func clearStatus() {
+        statusFadeWorkItem?.cancel()
+        statusFadeWorkItem = nil
+        statusLabel.stringValue = ""
+        statusLabel.alphaValue = 1
+        statusLabel.isHidden = true
+    }
+
+    private func showStatus(_ message: String) {
+        clearStatus()
+        statusLabel.stringValue = message
+        statusLabel.isHidden = false
+
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.3
+                self.statusLabel.animator().alphaValue = 0
+            } completionHandler: {
+                self.clearStatus()
+            }
+        }
+        statusFadeWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: workItem)
     }
 }
 

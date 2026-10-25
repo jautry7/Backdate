@@ -303,6 +303,10 @@ final class MainViewController: NSViewController {
 }
 
 private final class SectionBox: NSBox {
+    override var wantsDefaultClipping: Bool {
+        false
+    }
+
     override var intrinsicContentSize: NSSize {
         let nativeSize = super.intrinsicContentSize
         let contentHeight = contentView?.fittingSize.height ?? 0

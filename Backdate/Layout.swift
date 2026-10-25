@@ -12,10 +12,10 @@ enum Layout {
     }
 
     enum Content {
-        static let topPadding: CGFloat = 24
+        static let topPadding: CGFloat = 16
         static let bottomPadding: CGFloat = 24
         static let horizontalPadding: CGFloat = 16
-        static let boxBottomMargin: CGFloat = 28
+        static let sectionSpacing: CGFloat = 16
         static let boxBottomMarginLast: CGFloat = 20
         static let statusLeadingPadding: CGFloat = 8
 
@@ -40,8 +40,7 @@ enum Layout {
     }
 
     enum Section {
-        static let titleHorizontalOffset: CGFloat = -8
-        static let titleVerticalOffset: CGFloat = 10
+        static let titleToBoxSpacing: CGFloat = 8
 
         enum ContentPadding {
             static let horizontal: CGFloat = 18

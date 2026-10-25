@@ -17,8 +17,8 @@ final class MainViewController: NSViewController {
 
         fileArea.translatesAutoresizingMaskIntoConstraints = false
         let fileSection = makeSection(title: "File", content: fileArea)
-        fileSection.contentViewMargins = .zero
-        fileArea.sourceBox = fileSection
+        fileSection.box.contentViewMargins = .zero
+        fileArea.sourceBox = fileSection.box
         fileArea.onFileURLChanged = { [weak self] url in
             self?.selectedFileURL = url
             self?.clearStatus()
@@ -92,28 +92,31 @@ final class MainViewController: NSViewController {
         ].forEach(rootView.addSubview)
 
         NSLayoutConstraint.activate([
-            fileSection.topAnchor.constraint(equalTo: rootView.topAnchor, constant: Layout.Content.topPadding),
+            fileSection.titleLabel.topAnchor.constraint(
+                equalTo: rootView.topAnchor,
+                constant: Layout.Content.topPadding
+            ),
             fileSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
             fileSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
             fileArea.heightAnchor.constraint(greaterThanOrEqualToConstant: Layout.Content.File.dropAreaHeight),
 
-            dateSection.topAnchor.constraint(
+            dateSection.titleLabel.topAnchor.constraint(
                 equalTo: fileSection.bottomAnchor,
-                constant: Layout.Content.boxBottomMargin
+                constant: Layout.Content.sectionSpacing
             ),
             dateSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
             dateSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
 
-            changeSection.topAnchor.constraint(
+            changeSection.titleLabel.topAnchor.constraint(
                 equalTo: dateSection.bottomAnchor,
-                constant: Layout.Content.boxBottomMargin
+                constant: Layout.Content.sectionSpacing
             ),
             changeSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
             changeSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
 
-            affectSection.topAnchor.constraint(
+            affectSection.titleLabel.topAnchor.constraint(
                 equalTo: changeSection.bottomAnchor,
-                constant: Layout.Content.boxBottomMargin
+                constant: Layout.Content.sectionSpacing
             ),
             affectSection.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: Layout.Content.horizontalPadding),
             affectSection.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -Layout.Content.horizontalPadding),
@@ -139,28 +142,8 @@ final class MainViewController: NSViewController {
         ])
     }
 
-    private func makeSection(title: String, content: NSView) -> NSBox {
-        let box = SectionBox()
-        box.title = title
-        let titleFont = NSFont.preferredFont(forTextStyle: .callout)
-        box.titleFont = .systemFont(ofSize: titleFont.pointSize, weight: .semibold)
-        (box.titleCell as? NSTextFieldCell)?.textColor = .secondaryLabelColor
-        box.contentViewMargins = NSSize(
-            width: Layout.Section.ContentPadding.horizontal,
-            height: Layout.Section.ContentPadding.vertical
-        )
-        box.translatesAutoresizingMaskIntoConstraints = false
-
-        guard let contentView = box.contentView else { return box }
-        contentView.addSubview(content)
-        NSLayoutConstraint.activate([
-            content.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            content.topAnchor.constraint(equalTo: contentView.topAnchor),
-            content.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-        ])
-
-        return box
+    private func makeSection(title: String, content: NSView) -> SectionView {
+        SectionView(title: title, content: content)
     }
 
     private func makeRadioButton(title: String, action: Selector) -> NSButton {
@@ -302,26 +285,68 @@ final class MainViewController: NSViewController {
     }
 }
 
-private final class SectionBox: NSBox {
-    override var wantsDefaultClipping: Bool {
-        false
+private final class SectionView: NSView {
+    let box = SectionBox()
+    let titleLabel: NSTextField
+
+    init(title: String, content: NSView) {
+        titleLabel = NSTextField(labelWithString: title)
+        super.init(frame: .zero)
+
+        let titleFont = NSFont.preferredFont(forTextStyle: .callout)
+        titleLabel.font = .systemFont(ofSize: titleFont.pointSize, weight: .semibold)
+        titleLabel.textColor = .secondaryLabelColor
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        box.titlePosition = .noTitle
+        box.contentViewMargins = NSSize(
+            width: Layout.Section.ContentPadding.horizontal,
+            height: Layout.Section.ContentPadding.vertical
+        )
+        box.translatesAutoresizingMaskIntoConstraints = false
+
+        addSubview(box)
+        addSubview(titleLabel)
+
+        guard let contentView = box.contentView else { return }
+        contentView.addSubview(content)
+
+        NSLayoutConstraint.activate([
+            box.leadingAnchor.constraint(equalTo: leadingAnchor),
+            box.trailingAnchor.constraint(equalTo: trailingAnchor),
+            box.topAnchor.constraint(equalTo: topAnchor),
+            box.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor),
+            titleLabel.bottomAnchor.constraint(
+                equalTo: box.topAnchor,
+                constant: -Layout.Section.titleToBoxSpacing
+            ),
+
+            content.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            content.topAnchor.constraint(equalTo: contentView.topAnchor),
+            content.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+        ])
+
+        clipsToBounds = false
+        translatesAutoresizingMaskIntoConstraints = false
     }
+
+    required init?(coder: NSCoder) {
+        nil
+    }
+}
+
+private final class SectionBox: NSBox {
 
     override var intrinsicContentSize: NSSize {
         let nativeSize = super.intrinsicContentSize
         let contentHeight = contentView?.fittingSize.height ?? 0
-        let titleAllowance = max(0, titleRect.height - (borderWidth * 2))
 
         return NSSize(
             width: nativeSize.width,
-            height: contentHeight + (contentViewMargins.height * 2) + titleAllowance
-        )
-    }
-
-    override var titleRect: NSRect {
-        super.titleRect.offsetBy(
-            dx: Layout.Section.titleHorizontalOffset,
-            dy: Layout.Section.titleVerticalOffset
+            height: contentHeight + (contentViewMargins.height * 2)
         )
     }
 }

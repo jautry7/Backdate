@@ -56,8 +56,8 @@ enum Layout {
         enum ContentPadding {
             static let leading: CGFloat = 6
             static let trailing: CGFloat = 6
-            static let top: CGFloat = 5
-            static let bottom: CGFloat = 2
+            static let top: CGFloat = 4
+            static let bottom: CGFloat = 4
         }
 
         static let borderInset: CGFloat = 0.5
